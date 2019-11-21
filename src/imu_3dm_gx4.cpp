@@ -212,8 +212,8 @@ int main(int argc, char** argv) {
   pnh.param<bool>("enable_accel_update", enableAccelUpdate, true);
   pnh.param<bool>("enable_tf", enableTf, enableFilter);
   pnh.param<bool>("verbose", verbose, false);
-  nh.param<int>("retry_after", retryAfter, 3);
-  nh.param<int>("max_tries", maxRetries, 10);
+  pnh.param<int>("retry_after", retryAfter, 3);
+  pnh.param<int>("max_tries", maxRetries, 10);
 
   if (gravity <= 0.0) {
     ROS_ERROR("Must set gravity value");
@@ -249,22 +249,18 @@ int main(int argc, char** argv) {
     ROS_INFO("Publish pose to %s", pubPose.getTopic().c_str());
   }
 
-  //  new instance of the IMU
   Imu imu(device, verbose);
 
-<<<<<<< HEAD
   // Keep trying to connect maxRetries times after waiting for the device for retryAfter seconds
   for (int i = 0; i < maxRetries; ++i) {
     try {
+      //  new instance of the IMU
       imu.connect();
-
-      ROS_INFO("Selecting baud rate %u", baudrate);
-      imu.selectBaudRate(baudrate);
-
+        
       ROS_INFO("Fetching device info.");
       imu.getDeviceInfo(info);
-      std::map<std::string,std::string> map = info.toMap();
-      for (const std::pair<std::string,std::string>& p : map) {
+      std::map<std::string, std::string> map = info.toMap();
+      for (const std::pair<std::string, std::string>& p : map) {
         ROS_INFO("\t%s: %s", p.first.c_str(), p.second.c_str());
       }
 
@@ -281,11 +277,11 @@ int main(int argc, char** argv) {
       //  calculate decimation rates
       if (static_cast<uint16_t>(requestedImuRate) > imuBaseRate) {
         throw std::runtime_error("imu_rate cannot exceed " +
-                                 std::to_string(imuBaseRate));
+                                std::to_string(imuBaseRate));
       }
       if (static_cast<uint16_t>(requestedFilterRate) > filterBaseRate) {
         throw std::runtime_error("filter_rate cannot exceed " +
-                                 std::to_string(filterBaseRate));
+                                std::to_string(filterBaseRate));
       }
 
       const uint16_t imuDecimation = imuBaseRate / requestedImuRate;
@@ -295,22 +291,19 @@ int main(int argc, char** argv) {
       std::bitset<4> imuSources = Imu::IMUData::Accelerometer |
                                   Imu::IMUData::Gyroscope |
                                   Imu::IMUData::Barometer;
-      if (enableMagnetometer)
-      {
+      if (enableMagnetometer) {
         ROS_INFO("Enabling magnetometer");
         imuSources |= Imu::IMUData::Magnetometer;
-      }
-      else
-      {
+      } else {
         ROS_INFO("Disabling magnetometer");
       }
       imu.setIMUDataRate(imuDecimation, imuSources);
 
       ROS_INFO("Selecting filter decimation: %u", filterDecimation);
-      imu.setFilterDataRate(filterDecimation, Imu::FilterData::Quaternion |
-                                              Imu::FilterData::Bias |
-                                              Imu::FilterData::AngleUnertainty |
-                                              Imu::FilterData::BiasUncertainty);
+      imu.setFilterDataRate(filterDecimation,
+                            Imu::FilterData::Quaternion | Imu::FilterData::Bias |
+                                Imu::FilterData::AngleUnertainty |
+                                Imu::FilterData::BiasUncertainty);
 
       ROS_INFO("Enabling IMU data stream");
       imu.enableIMUStream(true);
@@ -332,8 +325,8 @@ int main(int argc, char** argv) {
       imu.setFilterDataCallback(publishFilter);
 
       //  configure diagnostic updater
-      if (!nh.hasParam("diagnostic_period")) {
-        nh.setParam("diagnostic_period", 0.2);  //  5hz period
+      if (!pnh.hasParam("diagnostic_period")) {
+        pnh.setParam("diagnostic_period", 0.2);  //  5hz period
       }
 
       updater.reset(new diagnostic_updater::Updater());
@@ -343,13 +336,13 @@ int main(int argc, char** argv) {
       //  calculate the actual rates we will get
       double imuRate = imuBaseRate / (1.0 * imuDecimation);
       double filterRate = filterBaseRate / (1.0 * filterDecimation);
-      imuDiag = configTopicDiagnostic("imu",&imuRate);
+      imuDiag = configTopicDiagnostic("imu", &imuRate);
       if (enableFilter) {
-        filterDiag = configTopicDiagnostic("filter",&filterRate);
+        filterDiag = configTopicDiagnostic("filter", &filterRate);
       }
 
       updater->add("diagnostic_info",
-                   boost::bind(&updateDiagnosticInfo, _1, &imu));
+                  boost::bind(&updateDiagnosticInfo, _1, &imu));
 
       ROS_INFO("Resuming the device");
       imu.resume();
@@ -359,123 +352,20 @@ int main(int argc, char** argv) {
         updater->update();
       }
       imu.disconnect();
-    }
-    catch (Imu::io_error &e) {
+    } 
+    catch (Imu::io_error& e) {
       ROS_ERROR("IO error: %s\n", e.what());
-    }
-    catch (Imu::timeout_error &e) {
+    } 
+    catch (Imu::timeout_error& e) {
       ROS_ERROR("Timeout: %s\n", e.what());
     }
-    catch (std::exception &e) {
+    catch (std::exception& e) {
       ROS_ERROR("Exception: %s\n", e.what());
     }
     ROS_WARN_STREAM("["<<ros::this_node::getName()<<"] Retrying in " << retryAfter << " seconds. Attempt "<<i<<"/"<<maxRetries);
-    if(ros::ok()){
-      imu.disconnect();
-      ros::Duration(retryAfter).sleep();
+      if(ros::ok()){
+        imu.disconnect();
+        ros::Duration(retryAfter).sleep();
     }
-=======
-    ROS_INFO("Fetching device info.");
-    imu.getDeviceInfo(info);
-    std::map<std::string, std::string> map = info.toMap();
-    for (const std::pair<std::string, std::string>& p : map) {
-      ROS_INFO("\t%s: %s", p.first.c_str(), p.second.c_str());
-    }
-
-    ROS_INFO("Idling the device");
-    imu.idle();
-
-    //  read back data rates
-    uint16_t imuBaseRate, filterBaseRate;
-    imu.getIMUDataBaseRate(imuBaseRate);
-    ROS_INFO("IMU data base rate: %u Hz", imuBaseRate);
-    imu.getFilterDataBaseRate(filterBaseRate);
-    ROS_INFO("Filter data base rate: %u Hz", filterBaseRate);
-
-    //  calculate decimation rates
-    if (static_cast<uint16_t>(requestedImuRate) > imuBaseRate) {
-      throw std::runtime_error("imu_rate cannot exceed " +
-                               std::to_string(imuBaseRate));
-    }
-    if (static_cast<uint16_t>(requestedFilterRate) > filterBaseRate) {
-      throw std::runtime_error("filter_rate cannot exceed " +
-                               std::to_string(filterBaseRate));
-    }
-
-    const uint16_t imuDecimation = imuBaseRate / requestedImuRate;
-    const uint16_t filterDecimation = filterBaseRate / requestedFilterRate;
-
-    ROS_INFO("Selecting IMU decimation: %u", imuDecimation);
-    std::bitset<4> imuSources = Imu::IMUData::Accelerometer |
-                                Imu::IMUData::Gyroscope |
-                                Imu::IMUData::Barometer;
-    if (enableMagnetometer) {
-      ROS_INFO("Enabling magnetometer");
-      imuSources |= Imu::IMUData::Magnetometer;
-    } else {
-      ROS_INFO("Disabling magnetometer");
-    }
-    imu.setIMUDataRate(imuDecimation, imuSources);
-
-    ROS_INFO("Selecting filter decimation: %u", filterDecimation);
-    imu.setFilterDataRate(filterDecimation,
-                          Imu::FilterData::Quaternion | Imu::FilterData::Bias |
-                              Imu::FilterData::AngleUnertainty |
-                              Imu::FilterData::BiasUncertainty);
-
-    ROS_INFO("Enabling IMU data stream");
-    imu.enableIMUStream(true);
-
-    if (enableFilter) {
-      ROS_INFO("Enabling filter data stream");
-      imu.enableFilterStream(true);
-
-      ROS_INFO("Enabling filter measurements");
-      imu.enableMeasurements(enableAccelUpdate, enableMagUpdate);
-
-      ROS_INFO("Enabling gyro bias estimation");
-      imu.enableBiasEstimation(true);
-    } else {
-      ROS_INFO("Disabling filter data stream");
-      imu.enableFilterStream(false);
-    }
-    imu.setIMUDataCallback(publishData);
-    imu.setFilterDataCallback(publishFilter);
-
-    //  configure diagnostic updater
-    if (!pnh.hasParam("diagnostic_period")) {
-      pnh.setParam("diagnostic_period", 0.2);  //  5hz period
-    }
-
-    updater.reset(new diagnostic_updater::Updater());
-    const std::string hwId = info.modelName + "-" + info.modelNumber;
-    updater->setHardwareID(hwId);
-
-    //  calculate the actual rates we will get
-    double imuRate = imuBaseRate / (1.0 * imuDecimation);
-    double filterRate = filterBaseRate / (1.0 * filterDecimation);
-    imuDiag = configTopicDiagnostic("imu", &imuRate);
-    if (enableFilter) {
-      filterDiag = configTopicDiagnostic("filter", &filterRate);
-    }
-
-    updater->add("diagnostic_info",
-                 boost::bind(&updateDiagnosticInfo, _1, &imu));
-
-    ROS_INFO("Resuming the device");
-    imu.resume();
-
-    while (ros::ok()) {
-      imu.runOnce();
-      updater->update();
-    }
-    imu.disconnect();
-  } catch (Imu::io_error& e) {
-    ROS_ERROR("IO error: %s\n", e.what());
-  } catch (Imu::timeout_error& e) {
-    ROS_ERROR("Timeout: %s\n", e.what());
-  } catch (std::exception& e) {
-    ROS_ERROR("Exception: %s\n", e.what());
->>>>>>> upstream/master
   }
 }
