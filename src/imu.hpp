@@ -20,6 +20,7 @@
 #include <vector>
 #include <bitset>
 #include <map>
+#include <functional>
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ //  will fail outside of gcc/clang
 #define HOST_LITTLE_ENDIAN
@@ -242,7 +243,7 @@ public:
 
   /**
    * @brief Imu Constructor
-   * @param device Path to the device in /dev, eg. /dev/ttyACM0
+   * @param device Path to the device in /dev, eg. /dev/imu
    * @param verbose If true, packet reads are logged to console.
    */
   Imu(const std::string &device, bool verbose);
