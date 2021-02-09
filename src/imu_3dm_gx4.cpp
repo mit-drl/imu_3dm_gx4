@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
   int retryAfter, maxRetries;
 
   //  load parameters from launch file
-  pnh.param<std::string>("device", device, "/dev/ttyACM0");
+  pnh.param<std::string>("device", device, "/dev/imu");
   pnh.param<int>("baudrate", baudrate, 115200);
   pnh.param<std::string>("frame_id", frameId, "imu");
   pnh.param<std::string>("fixed_frame_id", fixeFrameId, "world");

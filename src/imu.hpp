@@ -243,7 +243,7 @@ public:
 
   /**
    * @brief Imu Constructor
-   * @param device Path to the device in /dev, eg. /dev/ttyACM0
+   * @param device Path to the device in /dev, eg. /dev/imu
    * @param verbose If true, packet reads are logged to console.
    */
   Imu(const std::string &device, bool verbose);

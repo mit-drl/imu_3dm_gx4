@@ -34,7 +34,7 @@ This package works on Ubuntu 16.04 and 18.04.
 ## Options
 
 The `imu_3dm_gx4` node supports the following base options:
-* `device`: Path to the device in `/dev`. Defaults to `/dev/ttyACM0`.
+* `device`: Path to the device in `/dev`. Defaults to `/dev/imu`.
 * `baudrate`: Baudrate to employ with serial communication. Defaults to `115200`.
 * `frame_id`: Frame to use in headers.
 * `imu_rate`: IMU rate to use, in Hz. Default is 100.
